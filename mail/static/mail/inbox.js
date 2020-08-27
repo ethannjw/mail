@@ -50,6 +50,7 @@ function load_mailbox(mailbox) {
     // Show the mailbox name
     document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
     // Show the mailbox and hide other views
+    document.querySelector('#emails-view').innerHTML = '';
     document.querySelector('#emails-view').style.display = 'block';
     document.querySelector('#compose-view').style.display = 'none';
     // Fetch the emails
@@ -150,13 +151,14 @@ function load_email(id) {
         reply.innerHTML = "Reply"
         reply.className = "btn btn-sm btn-outline-primary";
         reply.id = "reply"
+        reply.onclick = function() {reply_email(id)};
         document.querySelector('#emails-view').append(reply);
 
         // archive button
         archive.innerHTML = "Archive"
         archive.className = "btn btn-sm btn-outline-primary";
         archive.id = "archive"
-        archive.onclick = archive_email(id);
+        archive.onclick = function() {archive_email(id)};
         document.querySelector('#emails-view').append(archive);
 
         // create a divider line
@@ -187,5 +189,50 @@ function archive_email(id) {
     .then(read => {
         console.log(`Archived status: ${read}`);
     });
-    load_mailbox('inbox');
+    load_mailbox("inbox")
+}
+
+function reply_email(id) {
+    // Show compose view and hide other views
+    document.querySelector('#emails-view').style.display = 'none';
+    document.querySelector('#compose-view').style.display = 'block';
+
+    // Clear out composition fields
+    const recipients = document.querySelector('#compose-recipients');
+    const subject = document.querySelector('#compose-subject');
+    const body = document.querySelector('#compose-body');
+
+    fetch(`/emails/${id}`, {
+        method: 'GET'})
+    .then(response => response.json())
+    .then(email => {
+        recipients.value = email.sender;
+        if (email.subject.slice(0, 3) == "Re:"){
+            subject.value = `${email.subject}`;
+        } else {
+            subject.value = `Re: ${email.subject}`; // need enter if already have Re: logic here
+        }
+        body.value = `On ${email.timestamp}, ${email.sender} wrote:\n${email.body}`;
+        document.querySelector('form').onsubmit = () => {
+            fetch('/emails', {
+                method: 'POST',
+                body: JSON.stringify({
+                    recipients: recipients.value,
+                    subject: subject.value,
+                    body: body.value
+                    })
+                })
+            .then(response => response.json())
+            .then(result => {
+                // Print result
+                console.log(result);
+            });
+            load_mailbox('sent');
+
+            return false;
+        }
+    })
+
+
+
 }
