@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function() {
 
     // Use buttons to toggle between views
@@ -38,8 +39,14 @@ function compose_email() {
         .then(result => {
             // Print result
             console.log(result);
+            if (result.status === 201){
+                load_mailbox('sent');
+            } else {
+                const message = document.createElement('div');
+                message.innerHTML = result.error;
+                document.querySelector('#compose-view').append(message);
+            }
         });
-        load_mailbox('sent');
 
         return false;
     }
@@ -47,12 +54,15 @@ function compose_email() {
 }
 
 function load_mailbox(mailbox) {
-    // Show the mailbox name
-    document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+
     // Show the mailbox and hide other views
     document.querySelector('#emails-view').innerHTML = '';
     document.querySelector('#emails-view').style.display = 'block';
     document.querySelector('#compose-view').style.display = 'none';
+
+    // Show the mailbox name
+    document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+
     // Fetch the emails
     fetch(`/emails/${mailbox}`, {
         method: 'GET'})
@@ -155,11 +165,19 @@ function load_email(id) {
         document.querySelector('#emails-view').append(reply);
 
         // archive button
-        archive.innerHTML = "Archive"
         archive.className = "btn btn-sm btn-outline-primary";
-        archive.id = "archive"
-        archive.onclick = function() {archive_email(id)};
-        document.querySelector('#emails-view').append(archive);
+
+        if (email.archived){
+            archive.innerHTML = "Unarchive"
+            archive.id = "unarchive"
+            archive.onclick = function() {unarchive_email(id)};
+        } else {
+            archive.innerHTML = "Archive"
+            archive.id = "archive"
+            archive.onclick = function() {archive_email(id)};
+
+        }
+            document.querySelector('#emails-view').append(archive);
 
         // create a divider line
         document.querySelector('#emails-view').append(document.createElement('hr'));
@@ -188,6 +206,19 @@ function archive_email(id) {
     .then(response => response.status)
     .then(read => {
         console.log(`Archived status: ${read}`);
+    });
+    load_mailbox("inbox")
+}
+
+function unarchive_email(id) {
+    // Mark the email archived
+    fetch(`/emails/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({archived: false})
+        })
+    .then(response => response.status)
+    .then(read => {
+        console.log(`Unarchive status: ${read}`);
     });
     load_mailbox("inbox")
 }
@@ -226,8 +257,14 @@ function reply_email(id) {
             .then(result => {
                 // Print result
                 console.log(result);
+                if (result.status === 201){
+                    load_mailbox('sent');
+                } else {
+                    const message = document.createElement('div');
+                    message.innerHTML = result.error;
+                    document.querySelector('#compose-view').append(message);
+                }
             });
-            load_mailbox('sent');
 
             return false;
         }
