@@ -39,7 +39,7 @@ function compose_email() {
         .then(result => {
             // Print result
             console.log(result);
-            if (result.status === 201){
+            if (result.hasOwnProperty("message")){
                 load_mailbox('sent');
             } else {
                 const message = document.createElement('div');
@@ -257,7 +257,7 @@ function reply_email(id) {
             .then(result => {
                 // Print result
                 console.log(result);
-                if (result.status === 201){
+                if (result.hasOwnProperty("message")){
                     load_mailbox('sent');
                 } else {
                     const message = document.createElement('div');
